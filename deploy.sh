@@ -23,7 +23,8 @@ check_bonfire_namespace() {
   NAMESPACE=`oc project -q 2>/dev/null || true`
   if [[ -z $NAMESPACE || "${NAMESPACE}" == "default" ]]; then
     echo "No bonfire namespace set or using 'default', reserving a namespace for you now (duration 10hr)..."
-    bonfire namespace reserve --duration 10h
+    NAMESPACE=$(bonfire namespace reserve --duration 10h)
+    oc project $NAMESPACE
   fi
 }
 
@@ -189,7 +190,7 @@ idmsvc" \
 
 setup_kessel() {
   echo "Kessel inventory is setting up.."
-  bonfire deploy kessel -C kessel-inventory -C kessel-relations --set-image-tag quay.io/redhat-services-prod/project-kessel-tenant/kessel-inventory/inventory-api=latest -p kessel-relations/SPICEDB_QUANTIZATION_INTERVAL=2.5s -p kessel-relations/SPICEDB_QUANTIZATION_STALENESS_PERCENT=0
+  bonfire deploy kessel -C kessel-inventory -C kessel-relations -n $(oc project -q) --set-image-tag quay.io/redhat-services-prod/project-kessel-tenant/kessel-inventory/inventory-api=latest -p kessel-relations/SPICEDB_QUANTIZATION_INTERVAL=2.5s -p kessel-relations/SPICEDB_QUANTIZATION_STALENESS_PERCENT=0
 }
 
 apply_schema() {
@@ -234,6 +235,9 @@ setup_kessel_inventory_consumer() {
 }
 
 setup_service_account() {
+    echo '==============================='
+    echo 'B: setting up service account'
+    echo '==============================='
     ENV_NAMESPACE="env-$(oc project -q)"
     ADMIN_USER=$(oc get secret "$ENV_NAMESPACE-keycloak" -o jsonpath='{.data.username}' | base64 -d)
     ADMIN_PASS=$(oc get secret "$ENV_NAMESPACE-keycloak" -o jsonpath='{.data.password}' | base64 -d)
@@ -283,10 +287,17 @@ deploy_compliance() {
   RBAC_GIT_COMMIT=$(echo $(git ls-remote https://github.com/RedHatInsights/insights-rbac HEAD) | cut -d ' ' -f1)
   RBAC_SHORT_COMMIT="${RBAC_GIT_COMMIT:0:7}"
 
-  login
-  check_bonfire_namespace
+  echo '==============================='
+  echo 'B: logging-in'
+  echo '==============================='
+  # login # not needed
 
+  echo '==============================='
+  echo 'B: deploying compliance'
+  echo '==============================='
+  export NAMESPACE=$(oc project -q)
   bonfire deploy compliance --source=appsre \
+  -n $NAMESPACE \
   --ref-env insights-production \
   --set-image-tag quay.io/cloudservices/compliance-backend="${COMPLIANCE_SHORT_COMMIT}" \
   --timeout 900 \
@@ -294,6 +305,9 @@ deploy_compliance() {
   --set-template-ref compliance="${COMPLIANCE_COMMIT}" \
   -p rbac/RBAC_KAFKA_CONSUMER_GROUP_ID=connect-relations-sink-connector \
   -p rbac/REPLICATION_TO_RELATION_ENABLED=True \
+  -p compliance/KESSEL_AUTH_ENABLED=False \
+  -p compliance/KESSEL_ENABLED=True \
+  -p compliance/KESSEL_INSECURE=True \
   --set-image-tag quay.io/redhat-services-prod/hcc-accessmanagement-tenant/insights-rbac="${RBAC_SHORT_COMMIT}" \
   --set-template-ref rbac="${RBAC_GIT_COMMIT}" \
   --frontends ${FRONTENDS}
