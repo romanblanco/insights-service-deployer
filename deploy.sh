@@ -305,9 +305,6 @@ deploy_compliance() {
   --set-template-ref compliance="${COMPLIANCE_COMMIT}" \
   -p rbac/RBAC_KAFKA_CONSUMER_GROUP_ID=connect-relations-sink-connector \
   -p rbac/REPLICATION_TO_RELATION_ENABLED=True \
-  -p compliance/KESSEL_AUTH_ENABLED=False \
-  -p compliance/KESSEL_ENABLED=True \
-  -p compliance/KESSEL_INSECURE=True \
   --set-image-tag quay.io/redhat-services-prod/hcc-accessmanagement-tenant/insights-rbac="${RBAC_SHORT_COMMIT}" \
   --set-template-ref rbac="${RBAC_GIT_COMMIT}" \
   --frontends ${FRONTENDS}
