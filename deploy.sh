@@ -96,7 +96,7 @@ idmsvc" \
   --set-image-tag quay.io/redhat-services-prod/rh-platform-experien-tenant/service-accounts="e187df2" \
   --set-image-tag quay.io/redhat-services-prod/insights-management-tenant/insights-host-inventory/host-inventory-frontend="${HOST_FRONTEND_GIT_COMMIT}" \
   --set-image-tag quay.io/redhat-services-prod/hcc-platex-services/chrome-service=latest \
-  --set-image-tag quay.io/redhat-services-prod/hcc-accessmanagement-tenant/insights-rbac=latest \
+  --set-image-tag quay.io/redhat-services-prod/hcc-accessmanagement-tenant/insights-rbac=quay.io/rblanco/insights-rbac:4bb86dc \
   -p host-inventory/BYPASS_RBAC=false \
   -p host-inventory/BYPASS_KESSEL=false \
   --set-image-tag quay.io/cloudservices/unleash-proxy=latest \
@@ -285,7 +285,7 @@ deploy_compliance() {
   fi
   COMPLIANCE_SHORT_COMMIT="${COMPLIANCE_COMMIT:0:7}"
 
-  RBAC_GIT_COMMIT=$(echo $(git ls-remote https://github.com/RedHatInsights/insights-rbac HEAD) | cut -d ' ' -f1)
+  RBAC_GIT_COMMIT=4bb86dc7b2d110f4fe495eb2ef7fab90b24c7623
   RBAC_SHORT_COMMIT="${RBAC_GIT_COMMIT:0:7}"
 
   echo '==============================='
@@ -306,7 +306,7 @@ deploy_compliance() {
   --set-template-ref compliance="${COMPLIANCE_COMMIT}" \
   -p rbac/RBAC_KAFKA_CONSUMER_GROUP_ID=connect-relations-sink-connector \
   -p rbac/REPLICATION_TO_RELATION_ENABLED=True \
-  --set-image-tag quay.io/redhat-services-prod/hcc-accessmanagement-tenant/insights-rbac="${RBAC_SHORT_COMMIT}" \
+  --set-image-tag quay.io/redhat-services-prod/hcc-accessmanagement-tenant/insights-rbac=quay.io/rblanco/insights-rbac:"${RBAC_SHORT_COMMIT}" \
   --set-template-ref rbac="${RBAC_GIT_COMMIT}" \
   --frontends ${FRONTENDS}
 
